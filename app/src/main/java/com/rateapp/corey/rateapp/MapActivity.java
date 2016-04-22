@@ -11,7 +11,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
-import com.google.android.gms.identity.intents.Address;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -81,11 +80,11 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
 
 
-        //geocoding
+        //geocodin
         Geocoder geoCode=new Geocoder(getApplicationContext(), Locale.getDefault());
         try {
             List<android.location.Address> myList=geoCode.getFromLocation(lat,longg,1);
-            mMap.addMarker(new MarkerOptions().position(new LatLng(lat,longg) ).title(myList`.toString()).snippet("Snippet"));
+            mMap.addMarker(new MarkerOptions().position(new LatLng(lat,longg) ).title(myList.toString()).snippet("test"));
 
         } catch (IOException e) {
             e.printStackTrace();
