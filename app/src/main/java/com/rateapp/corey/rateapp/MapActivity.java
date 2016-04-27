@@ -1,17 +1,28 @@
 package com.rateapp.corey.rateapp;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 
-import com.google.android.gms.identity.intents.Address;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -23,10 +34,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-public class MapActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback,ConnectionCallbacks,OnConnectionFailedListener {
 
     private GoogleMap mMap;
-
+    LocationManager lm;
+    String provider;
+    protected Location myLocation;
+    protected GoogleApiClient mGoogleApiClient;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,7 +49,25 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        provider = lm.getBestProvider(new Criteria(), false);
+        mGoogleApiClient=new GoogleApiClient.Builder(this)
+        .addConnectionCallbacks(this)
+        .addOnConnectionFailedListener(this)
+        .addApi(LocationServices.API)
+                .build();
     }
+
+    protected void onStart() {
+        mGoogleApiClient.connect();
+        super.onStart();
+    }
+    protected void onStop() {
+        mGoogleApiClient.disconnect();
+        super.onStop();
+    }
+
+
 
     /**
      * Manipulates the map once available.
@@ -46,49 +78,49 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
      */
+
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
+
         mMap = googleMap;
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(0, 0);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker").snippet("Snippet"));
+        //Criteria criteria=new Criteria();
+        //Location myLocation = lm.getLastKnownLocation(provider);
+        mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
+
+
+
+
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            myLocation=LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            double  latitude = myLocation.getLatitude();
+            double longtitude=myLocation.getLongitude();
+            LatLng latLng =new LatLng(latitude,longtitude);
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(14));
+            mMap.addMarker(new MarkerOptions().position(new LatLng(latitude,longtitude)).title("title"));
+            Log.i("working","working!");
+        } else {
+
         }
-        mMap.setMyLocationEnabled(true);
-        LocationManager locationManager =(LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (myLocation !=null) {
 
-
-        Criteria criteria = new Criteria();
-        String provider=locationManager.getBestProvider(criteria,true);
-
-        Location mlocation = locationManager.getLastKnownLocation(provider);
-
-        double lat=mlocation.getLatitude();
-        double longg=mlocation.getLongitude();
-        LatLng cordinates=new LatLng(lat,longg);
-
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(cordinates));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(10));
-
-
-
-        //geocoding
-        Geocoder geoCode=new Geocoder(getApplicationContext(), Locale.getDefault());
-        try {
-            List<android.location.Address> myList=geoCode.getFromLocation(lat,longg,1);
-            mMap.addMarker(new MarkerOptions().position(new LatLng(lat,longg) ).title(myList`.toString()).snippet("Snippet"));
-
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+     mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
     }
 }
